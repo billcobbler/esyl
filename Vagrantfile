@@ -86,6 +86,8 @@ Vagrant.configure(2) do |config|
     yes | mix archive.install https://github.com/phoenixframework/phoenix/releases/download/v1.0.3/phoenix_new-1.0.3.ez
     sudo apt-get install -yq inotify-tools nodejs-legacy npm postgresql-client postgresql postgresql-contrib
     sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+    echo "*.* @localhost:5144" | sudo tee /etc/rsyslog.d/forward_to_esyl.conf
+    sudo service rsyslog restart
     echo "Completed"
   SHELL
 end
