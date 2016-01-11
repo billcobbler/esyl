@@ -4,9 +4,9 @@
 -behaviour(gen_server).
 -export([init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2]).
 -export([start_link/1]).
--export([handle_udp_packet/2]).
 
 -define(UDP_OPTIONS, [binary, {active, once}]).
+-define(MAX_PROCESS_THRESHOLD, 0.95).
 
 start_link(Port) ->
     io:format("Starting server~n"),
@@ -32,8 +32,13 @@ handle_call({logged}, _Caller, State) ->
 
 handle_info({udp, Socket, _IP, _RemotePortNo, _Packet} = Req, State) ->
     inet:setopts(Socket, [{active, once}]),
-    spawn(?MODULE, handle_udp_packet, [Req, State]),
-    {noreply, State};
+    case check_overload() of
+        allow ->
+            spawn(fun() -> handle_udp_packet(Req, State) end),
+            {noreply, State};
+        deny ->
+            {noreply, State}
+    end;
 handle_info(Info, State) ->
     io:format("~p catchall: ~p, ~p~n", [?MODULE, Info, State]),
     {noreply, State}.
@@ -42,7 +47,15 @@ terminate(_Reason, _Library) -> ok.
 
 code_change(_OldVersion, Library, _Extra) -> {ok, Library}.
 
-
 handle_udp_packet({udp, _Socket, _IP, _RemotePortNo, _Packet} = _Req, _State) ->
     io:format("~p~n",[self()]).
+
+check_overload() ->
+    N = erlang:system_info(process_count),
+    T = erlang:system_info(process_limit),
+    check_overload(N,T).
+check_overload(N,T) when (N / T) < ?MAX_PROCESS_THRESHOLD ->
+    allow;
+check_overload(_,_) ->
+    deny.
 
