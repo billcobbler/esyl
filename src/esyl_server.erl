@@ -5,7 +5,7 @@
 -export([init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2]).
 -export([start_link/1]).
 
--define(UDP_OPTIONS, [binary, {active, once}]).
+-define(UDP_OPTIONS, [binary, {active, once}, {recbuf, 3728270}, {read_packets, 5}]).
 -define(MAX_PROCESS_THRESHOLD, 0.95).
 
 start_link(Port) ->
